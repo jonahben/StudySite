@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>StudyHub — Your Exam Companion</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0e0e10;
+    --surface: #18181c;
+    --surface2: #22222a;
+    --border: rgba(255,255,255,0.08);
+    --border-strong: rgba(255,255,255,0.15);
+    --text: #f0ede8;
+    --text-muted: #8a8794;
+    --text-faint: #4a4858;
+    --accent: #c8f04a;
+    --accent-dark: #9bbf2e;
+    --accent-glow: rgba(200,240,74,0.15);
+    --teal: #4affd4;
+    --coral: #ff6b6b;
+    --blue: #6b9fff;
+    --font-display: 'DM Serif Display', serif;
+    --font-body: 'DM Sans', sans-serif;
+    --radius: 12px;
+    --radius-lg: 20px;
+    --transition: 0.2s cubic-bezier(0.4,0,0.2,1);
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 15px;
+    line-height: 1.6;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ---- NOISE TEXTURE OVERLAY ---- */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.4;
+  }
+
+  /* ---- HEADER / NAV ---- */
+  header {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(14,14,16,0.85);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 2rem;
+  }
+  .nav-inner {
+    max-width: 1100px; margin: 0 auto;
+    display: flex; align-items: center; gap: 1rem;
+    height: 60px;
+  }
+  .logo {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    color: var(--accent);
+    letter-spacing: -0.02em;
+    margin-right: auto;
+    text-decoration: none;
+  }
+  .logo span { color: var(--text); }
+  nav { display: flex; gap: 4px; }
+  nav button {
+    background: none; border: none; cursor: pointer;
+    color: var(--text-muted); font-family: var(--font-body);
+    font-size: 13px; font-weight: 500;
+    padding: 6px 14px; border-radius: 8px;
+    transition: var(--transition);
+    display: flex; align-items: center; gap: 6px;
+  }
+  nav button:hover { color: var(--text); background: var(--surface2); }
+  nav button.active { color: var(--accent); background: var(--accent-glow); }
+  nav button svg { width: 15px; height: 15px; flex-shrink: 0; }
+
+  /* ---- HERO ---- */
+  .hero {
+    position: relative; z-index: 1;
+    max-width: 1100px; margin: 0 auto;
+    padding: 5rem 2rem 3rem;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; align-items: center;
+  }
+  .hero-text h1 {
+    font-family: var(--font-display);
+    font-size: clamp(2.4rem, 5vw, 3.6rem);
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    margin-bottom: 1rem;
+  }
+  .hero-text h1 em { color: var(--accent); font-style: italic; }
+  .hero-text p { color: var(--text-muted); font-size: 1rem; max-width: 380px; margin-bottom: 1.5rem; }
+  .hero-cta {
+    display: flex; gap: 10px; flex-wrap: wrap;
+  }
+  .btn-primary {
+    background: var(--accent); color: #0e0e10;
+    border: none; cursor: pointer;
+    font-family: var(--font-body); font-size: 14px; font-weight: 600;
+    padding: 12px 24px; border-radius: 10px;
+    transition: var(--transition);
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  .btn-primary:hover { background: var(--accent-dark); transform: translateY(-1px); }
+  .btn-ghost {
+    background: none; color: var(--text-muted);
+    border: 1px solid var(--border-strong); cursor: pointer;
+    font-family: var(--font-body); font-size: 14px; font-weight: 500;
+    padding: 12px 24px; border-radius: 10px;
+    transition: var(--transition);
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  .btn-ghost:hover { color: var(--text); border-color: var(--text-muted); }
+
+  .hero-stats {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+  }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.25rem 1rem;
+    text-align: center;
+    transition: var(--transition);
+  }
+  .stat-card:hover { border-color: var(--border-strong); transform: translateY(-2px); }
+  .stat-card .num {
+    font-family: var(--font-display); font-size: 2rem; color: var(--accent);
+    display: block; margin-bottom: 4px;
+  }
+  .stat-card .lbl { font-size: 12px; color: var(--text-muted); }
+
+  /* ---- MAIN CONTENT ---- */
+  main {
+    position: relative; z-index: 1;
+    max-width: 1100px; margin: 0 auto;
+    padding: 0 2rem 4rem;
+  }
+
+  /* ---- SECTION ---- */
+  .section { display: none; animation: fadeUp 0.3s ease; }
+  .section.active { display: block; }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .section-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;
+  }
+  .section-title {
+    font-family: var(--font-display);
+    font-size: 1.6rem; letter-spacing: -0.01em;
+  }
+
+  /* ---- CARDS ---- */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    transition: var(--transition);
+  }
+  .card:hover { border-color: var(--border-strong); }
+
+  /* ---- FLASHCARDS SECTION ---- */
+  .fc-layout { display: grid; grid-template-columns: 1fr 340px; gap: 1.5rem; }
+  .flip-scene {
+    perspective: 1000px; height: 260px; cursor: pointer;
+    border-radius: var(--radius-lg); margin-bottom: 1rem;
+  }
+  .flip-inner {
+    width: 100%; height: 100%; position: relative;
+    transform-style: preserve-3d; transition: transform 0.55s cubic-bezier(0.4,0,0.2,1);
+    border-radius: var(--radius-lg);
+  }
+  .flip-inner.flipped { transform: rotateY(180deg); }
+  .flip-face {
+    position: absolute; inset: 0;
+    backface-visibility: hidden; border-radius: var(--radius-lg);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 2rem; text-align: center;
+  }
+  .flip-face.flip-back { transform: rotateY(180deg); border-color: var(--accent); }
+  .flip-label {
+    font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--text-faint); margin-bottom: 1rem;
+  }
+  .flip-back .flip-label { color: var(--accent); opacity: 0.7; }
+  .flip-text { font-size: 1.2rem; font-weight: 500; line-height: 1.4; color: var(--text); }
+  .flip-hint { font-size: 11px; color: var(--text-faint); text-align: center; margin-bottom: 1rem; }
+  .fc-controls {
+    display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 1.5rem;
+  }
+  .icon-btn {
+    width: 36px; height: 36px; border-radius: 50%;
+    border: 1px solid var(--border); background: var(--surface2);
+    color: var(--text-muted); cursor: pointer; font-size: 16px;
+    display: flex; align-items: center; justify-content: center;
+    transition: var(--transition);
+  }
+  .icon-btn:hover { border-color: var(--border-strong); color: var(--text); }
+  .fc-counter { font-size: 13px; color: var(--text-muted); min-width: 60px; text-align: center; }
+  .fc-panel { display: flex; flex-direction: column; gap: 12px; }
+  .fc-list { display: flex; flex-direction: column; gap: 6px; max-height: 200px; overflow-y: auto; }
+  .fc-item {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 8px 12px; cursor: pointer;
+    font-size: 13px; color: var(--text-muted); transition: var(--transition);
+  }
+  .fc-item:hover, .fc-item.active { border-color: var(--accent); color: var(--text); }
+  label { font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 4px; }
+  input[type="text"], textarea, select {
+    width: 100%; background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text); font-family: var(--font-body); font-size: 14px;
+    padding: 10px 12px; border-radius: 8px;
+    outline: none; transition: var(--transition);
+  }
+  input[type="text"]:focus, textarea:focus, select:focus { border-color: var(--accent); }
+  textarea { resize: vertical; min-height: 70px; }
+
+  /* ---- QUIZ SECTION ---- */
+  .quiz-layout { display: grid; grid-template-columns: 1fr 300px; gap: 1.5rem; }
+  .quiz-progress-wrap {
+    background: var(--surface2); border-radius: 4px; height: 4px; margin-bottom: 1.5rem;
+  }
+  .quiz-progress { height: 100%; background: var(--accent); border-radius: 4px; transition: width 0.4s ease; }
+  .quiz-q-num { font-size: 12px; color: var(--text-faint); margin-bottom: 0.5rem; }
+  .quiz-question { font-size: 1.2rem; font-weight: 500; margin-bottom: 1.5rem; line-height: 1.4; }
+  .quiz-opts { display: flex; flex-direction: column; gap: 10px; margin-bottom: 1.5rem; }
+  .opt-btn {
+    background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text); font-family: var(--font-body); font-size: 14px;
+    text-align: left; padding: 12px 16px; border-radius: 10px;
+    cursor: pointer; transition: var(--transition);
+    display: flex; align-items: center; gap: 12px;
+  }
+  .opt-btn .opt-letter {
+    width: 26px; height: 26px; border-radius: 6px;
+    background: var(--surface); border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 600; color: var(--text-muted);
+    flex-shrink: 0; transition: var(--transition);
+  }
+  .opt-btn:hover:not(:disabled) { border-color: var(--accent); }
+  .opt-btn:hover:not(:disabled) .opt-letter { background: var(--accent-glow); border-color: var(--accent); color: var(--accent); }
+  .opt-btn.correct { border-color: var(--teal); background: rgba(74,255,212,0.07); }
+  .opt-btn.correct .opt-letter { background: rgba(74,255,212,0.2); border-color: var(--teal); color: var(--teal); }
+  .opt-btn.wrong { border-color: var(--coral); background: rgba(255,107,107,0.07); }
+  .opt-btn.wrong .opt-letter { background: rgba(255,107,107,0.2); border-color: var(--coral); color: var(--coral); }
+  .quiz-feedback {
+    padding: 12px 16px; border-radius: 10px; font-size: 14px; margin-bottom: 1rem; display: none;
+  }
+  .quiz-feedback.ok { background: rgba(74,255,212,0.1); border: 1px solid rgba(74,255,212,0.3); color: var(--teal); }
+  .quiz-feedback.bad { background: rgba(255,107,107,0.1); border: 1px solid rgba(255,107,107,0.3); color: var(--coral); }
+  .quiz-score-panel { display: flex; flex-direction: column; gap: 12px; }
+  .score-ring {
+    display: flex; align-items: center; justify-content: center;
+    width: 100%; aspect-ratio: 1; max-width: 180px; margin: 0 auto;
+    position: relative;
+  }
+  .score-ring svg { transform: rotate(-90deg); }
+  .score-ring .score-label {
+    position: absolute; text-align: center;
+    font-family: var(--font-display); font-size: 2rem; color: var(--text);
+  }
+  .score-ring .score-sub { font-size: 11px; color: var(--text-muted); font-family: var(--font-body); display: block; }
+  .score-breakdown { display: flex; gap: 8px; }
+  .score-stat {
+    flex: 1; background: var(--surface2); border-radius: 8px;
+    padding: 10px; text-align: center; border: 1px solid var(--border);
+  }
+  .score-stat .s-num { font-size: 1.4rem; font-weight: 600; display: block; }
+  .score-stat .s-lbl { font-size: 11px; color: var(--text-muted); }
+  .correct-stat .s-num { color: var(--teal); }
+  .wrong-stat .s-num { color: var(--coral); }
+
+  /* ---- NOTES SECTION ---- */
+  .notes-layout { display: grid; grid-template-columns: 1fr 280px; gap: 1.5rem; }
+  .toolbar {
+    display: flex; gap: 6px; padding: 8px; background: var(--surface2);
+    border: 1px solid var(--border); border-radius: 10px; flex-wrap: wrap;
+    margin-bottom: 10px;
+  }
+  .tool-btn {
+    background: none; border: 1px solid transparent; color: var(--text-muted);
+    font-family: var(--font-body); font-size: 13px; font-weight: 500;
+    padding: 5px 10px; border-radius: 6px; cursor: pointer; transition: var(--transition);
+    display: flex; align-items: center; gap: 5px;
+  }
+  .tool-btn:hover { background: var(--surface); color: var(--text); border-color: var(--border); }
+  .tool-btn.danger:hover { color: var(--coral); border-color: rgba(255,107,107,0.3); }
+  .notes-ta {
+    width: 100%; min-height: 380px; background: var(--surface2);
+    border: 1px solid var(--border); color: var(--text);
+    font-family: var(--font-body); font-size: 15px; line-height: 1.8;
+    padding: 1.25rem; border-radius: 12px; outline: none;
+    transition: var(--transition); resize: vertical;
+  }
+  .notes-ta:focus { border-color: var(--accent); }
+  .notes-meta { font-size: 12px; color: var(--text-faint); margin-top: 6px; }
+  .notes-sidebar { display: flex; flex-direction: column; gap: 12px; }
+  .saved-note {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px; cursor: pointer; transition: var(--transition);
+  }
+  .saved-note:hover { border-color: var(--border-strong); }
+  .note-title { font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 4px; }
+  .note-preview { font-size: 12px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .note-date { font-size: 11px; color: var(--text-faint); margin-top: 6px; }
+
+  /* ---- TIMER SECTION ---- */
+  .timer-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; align-items: start; }
+  .mode-tabs { display: flex; gap: 6px; margin-bottom: 1.5rem; background: var(--surface2); padding: 4px; border-radius: 10px; }
+  .mode-tab {
+    flex: 1; background: none; border: none; color: var(--text-muted);
+    font-family: var(--font-body); font-size: 12px; font-weight: 500;
+    padding: 7px 12px; border-radius: 7px; cursor: pointer; transition: var(--transition);
+  }
+  .mode-tab.active { background: var(--accent); color: #0e0e10; }
+  .timer-face {
+    display: flex; align-items: center; justify-content: center;
+    aspect-ratio: 1; max-width: 220px; margin: 0 auto 1.5rem;
+    position: relative;
+  }
+  .timer-svg { transform: rotate(-90deg); width: 100%; height: 100%; }
+  .timer-bg-ring { fill: none; stroke: var(--surface2); stroke-width: 6; }
+  .timer-ring { fill: none; stroke: var(--accent); stroke-width: 6; stroke-linecap: round; transition: stroke-dashoffset 1s linear; }
+  .timer-num {
+    position: absolute; font-family: var(--font-display);
+    font-size: 2.8rem; letter-spacing: -0.03em; color: var(--text);
+  }
+  .timer-btns { display: flex; gap: 10px; justify-content: center; margin-bottom: 1.5rem; }
+  .timer-btn-main {
+    background: var(--accent); color: #0e0e10; border: none;
+    font-family: var(--font-body); font-size: 15px; font-weight: 600;
+    padding: 12px 32px; border-radius: 10px; cursor: pointer;
+    transition: var(--transition); display: flex; align-items: center; gap: 8px;
+  }
+  .timer-btn-main:hover { background: var(--accent-dark); }
+  .timer-btn-reset {
+    background: var(--surface2); color: var(--text-muted); border: 1px solid var(--border);
+    font-family: var(--font-body); font-size: 15px;
+    padding: 12px 20px; border-radius: 10px; cursor: pointer;
+    transition: var(--transition);
+  }
+  .timer-btn-reset:hover { color: var(--text); border-color: var(--border-strong); }
+  .sessions-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .session-pip {
+    aspect-ratio: 1; border-radius: 50%;
+    background: var(--surface2); border: 1px solid var(--border);
+    transition: var(--transition);
+  }
+  .session-pip.done { background: var(--accent); border-color: var(--accent); }
+  .timer-tip { font-size: 13px; color: var(--text-muted); text-align: center; line-height: 1.5; }
+  .today-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .t-stat {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 1rem; text-align: center;
+  }
+  .t-stat-num { font-family: var(--font-display); font-size: 1.8rem; color: var(--accent); display: block; }
+  .t-stat-lbl { font-size: 12px; color: var(--text-muted); }
+
+  /* ---- HOME ---- */
+  .home-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+  .home-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 1.75rem;
+    cursor: pointer; transition: var(--transition);
+    display: flex; flex-direction: column; gap: 0.75rem;
+  }
+  .home-card:hover { border-color: var(--accent); transform: translateY(-3px); box-shadow: 0 12px 40px rgba(200,240,74,0.06); }
+  .home-card-icon {
+    width: 44px; height: 44px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center; font-size: 22px;
+  }
+  .home-card h3 { font-size: 1.05rem; font-weight: 600; color: var(--text); }
+  .home-card p { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
+  .home-card .card-arrow { font-size: 18px; color: var(--text-faint); align-self: flex-end; margin-top: auto; }
+
+  /* ---- UTILITIES ---- */
+  .btn {
+    background: var(--surface2); color: var(--text-muted);
+    border: 1px solid var(--border); font-family: var(--font-body);
+    font-size: 13px; font-weight: 500; padding: 8px 16px;
+    border-radius: 8px; cursor: pointer; transition: var(--transition);
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .btn:hover { color: var(--text); border-color: var(--border-strong); }
+  .btn.accent { background: var(--accent-glow); color: var(--accent); border-color: rgba(200,240,74,0.3); }
+  .btn.accent:hover { background: rgba(200,240,74,0.25); }
+  .divider { border: none; border-top: 1px solid var(--border); margin: 1rem 0; }
+  .gap-sm { gap: 8px; }
+  .flex { display: flex; }
+  .flex-col { display: flex; flex-direction: column; }
+
+  /* ---- SCROLLBAR ---- */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
+
+  /* ---- RESPONSIVE ---- */
+  @media (max-width: 800px) {
+    .hero { grid-template-columns: 1fr; padding: 2rem 1rem; }
+    .hero-stats { grid-template-columns: repeat(3, 1fr); }
+    main { padding: 0 1rem 3rem; }
+    .fc-layout, .quiz-layout, .notes-layout, .timer-layout { grid-template-columns: 1fr; }
+    .home-grid { grid-template-columns: 1fr; }
+    nav button span { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="nav-inner">
+    <a class="logo" href="#" onclick="showSection('home')">Study<span>Hub</span></a>
+    <nav>
+      <button onclick="showSection('home')" id="nav-home" class="active">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <span>Home</span>
+      </button>
+      <button onclick="showSection('flashcards')" id="nav-flashcards">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+        <span>Flashcards</span>
+      </button>
+      <button onclick="showSection('quiz')" id="nav-quiz">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <span>Quiz</span>
+      </button>
+      <button onclick="showSection('notes')" id="nav-notes">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        <span>Notes</span>
+      </button>
+      <button onclick="showSection('timer')" id="nav-timer">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        <span>Timer</span>
+      </button>
+    </nav>
+  </div>
+</header>
+
+<!-- HOME -->
+<section id="sec-home" class="section active">
+  <div class="hero">
+    <div class="hero-text">
+      <h1>Study smarter,<br><em>not harder.</em></h1>
+      <p>Your all-in-one exam companion. Flashcards, quizzes, notes, and a Pomodoro timer — everything in one place.</p>
+      <div class="hero-cta">
+        <button class="btn-primary" onclick="showSection('flashcards')">Get started →</button>
+        <button class="btn-ghost" onclick="showSection('quiz')">Take a quiz</button>
+      </div>
+    </div>
+    <div class="hero-stats">
+      <div class="stat-card"><span class="num" id="heroCards">3</span><span class="lbl">Flashcards</span></div>
+      <div class="stat-card"><span class="num" id="heroScore">—</span><span class="lbl">Quiz score</span></div>
+      <div class="stat-card"><span class="num" id="heroSessions">0</span><span class="lbl">Sessions</span></div>
+    </div>
+  </div>
+  <main>
+    <div class="home-grid">
+      <div class="home-card" onclick="showSection('flashcards')">
+        <div class="home-card-icon" style="background:rgba(200,240,74,0.1)">🃏</div>
+        <h3>Flashcards</h3>
+        <p>Build a deck of question-answer cards and test your memory with spaced repetition.</p>
+        <span class="card-arrow">→</span>
+      </div>
+      <div class="home-card" onclick="showSection('quiz')">
+        <div class="home-card-icon" style="background:rgba(74,255,212,0.1)">❓</div>
+        <h3>Quiz</h3>
+        <p>Multiple-choice questions with instant feedback and a running score tracker.</p>
+        <span class="card-arrow">→</span>
+      </div>
+      <div class="home-card" onclick="showSection('notes')">
+        <div class="home-card-icon" style="background:rgba(107,159,255,0.1)">📝</div>
+        <h3>Notes</h3>
+        <p>Write and save study notes with formatting tools. Save multiple sets and switch between them.</p>
+        <span class="card-arrow">→</span>
+      </div>
+      <div class="home-card" onclick="showSection('timer')">
+        <div class="home-card-icon" style="background:rgba(255,107,107,0.1)">⏱</div>
+        <h3>Pomodoro Timer</h3>
+        <p>25-minute focus sessions with short and long breaks. Track your daily sessions.</p>
+        <span class="card-arrow">→</span>
+      </div>
+    </div>
+  </main>
+</section>
+
+<!-- FLASHCARDS -->
+<section id="sec-flashcards" class="section">
+  <main>
+    <div class="section-header">
+      <h2 class="section-title">Flashcards</h2>
+      <button class="btn accent" onclick="shuffleCards()">⇄ Shuffle</button>
+    </div>
+    <div class="fc-layout">
+      <div>
+        <div class="flip-scene" onclick="flipCard()">
+          <div class="flip-inner" id="flipInner">
+            <div class="flip-face flip-front">
+              <div class="flip-label">Question</div>
+              <div class="flip-text" id="fcFront">What is photosynthesis?</div>
+            </div>
+            <div class="flip-face flip-back">
+              <div class="flip-label">Answer</div>
+              <div class="flip-text" id="fcBack">The process by which plants convert sunlight, water, and CO₂ into glucose and oxygen.</div>
+            </div>
+          </div>
+        </div>
+        <p class="flip-hint">Click the card to reveal the answer</p>
+        <div class="fc-controls">
+          <button class="icon-btn" onclick="prevCard()">←</button>
+          <span class="fc-counter" id="fcCounter">1 / 3</span>
+          <button class="icon-btn" onclick="nextCard()">→</button>
+        </div>
+        <hr class="divider" />
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:12px;font-weight:500;">Add a card</p>
+        <div class="flex-col" style="gap:10px;">
+          <div><label>Question</label><input type="text" id="newQ" placeholder="e.g. What is osmosis?" /></div>
+          <div><label>Answer</label><textarea id="newA" placeholder="The movement of water molecules through a semipermeable membrane..."></textarea></div>
+          <button class="btn accent" onclick="addCard()" style="align-self:flex-start;">+ Add card</button>
+        </div>
+      </div>
+      <div class="fc-panel card">
+        <p style="font-size:12px;font-weight:500;color:var(--text-muted);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.08em;">Your deck</p>
+        <div class="fc-list" id="fcList"></div>
+      </div>
+    </div>
+  </main>
+</section>
+
+<!-- QUIZ -->
+<section id="sec-quiz" class="section">
+  <main>
+    <div class="section-header">
+      <h2 class="section-title">Quiz</h2>
+      <button class="btn" onclick="restartQuiz()">↺ Restart</button>
+    </div>
+    <div class="quiz-layout">
+      <div id="quizContent">
+        <div class="quiz-progress-wrap"><div class="quiz-progress" id="quizBar" style="width:0%"></div></div>
+        <p class="quiz-q-num" id="qNum">Question 1 of 5</p>
+        <p class="quiz-question" id="quizQ">Loading…</p>
+        <div class="quiz-opts" id="quizOpts"></div>
+        <div class="quiz-feedback" id="quizFeedback"></div>
+        <button class="btn-primary" id="quizNextBtn" onclick="nextQ()" style="display:none;">Next question →</button>
+      </div>
+      <div class="quiz-score-panel card">
+        <div class="score-ring">
+          <svg viewBox="0 0 120 120" class="timer-svg" style="width:160px;height:160px;">
+            <circle class="timer-bg-ring" cx="60" cy="60" r="52" />
+            <circle class="timer-ring" id="scoreRing" cx="60" cy="60" r="52" stroke-dasharray="327" stroke-dashoffset="327" />
+          </svg>
+          <div class="score-label"><span id="scorePct">—</span><span class="score-sub">accuracy</span></div>
+        </div>
+        <div class="score-breakdown">
+          <div class="score-stat correct-stat"><span class="s-num" id="scoreC">0</span><span class="s-lbl">Correct</span></div>
+          <div class="score-stat wrong-stat"><span class="s-num" id="scoreW">0</span><span class="s-lbl">Wrong</span></div>
+        </div>
+      </div>
+    </div>
+  </main>
+</section>
+
+<!-- NOTES -->
+<section id="sec-notes" class="section">
+  <main>
+    <div class="section-header">
+      <h2 class="section-title">Notes</h2>
+      <div class="flex gap-sm">
+        <button class="btn" onclick="saveNote()">💾 Save note</button>
+        <button class="btn accent" onclick="newNote()">+ New</button>
+      </div>
+    </div>
+    <div class="notes-layout">
+      <div>
+        <div class="toolbar">
+          <button class="tool-btn" onclick="wrapSel('**','**')"><b>B</b></button>
+          <button class="tool-btn" onclick="wrapSel('*','*')"><i>I</i></button>
+          <button class="tool-btn" onclick="wrapSel('__','__')"><u>U</u></button>
+          <button class="tool-btn" onclick="insertAt('# ')">H1</button>
+          <button class="tool-btn" onclick="insertAt('## ')">H2</button>
+          <button class="tool-btn" onclick="insertAt('- ')">• List</button>
+          <button class="tool-btn" onclick="insertAt('1. ')">1. List</button>
+          <button class="tool-btn" onclick="insertAt('> ')">Quote</button>
+          <button class="tool-btn danger" onclick="clearNotes()" style="margin-left:auto;">🗑 Clear</button>
+        </div>
+        <textarea class="notes-ta" id="notesTA" placeholder="Start writing your notes here…&#10;&#10;Tips:&#10;• Use # for headings&#10;• Use - for bullet points&#10;• Press Save to store your notes"></textarea>
+        <p class="notes-meta" id="notesMeta">0 words · 0 characters</p>
+      </div>
+      <div class="notes-sidebar card">
+        <p style="font-size:12px;font-weight:500;color:var(--text-muted);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.08em;">Saved notes</p>
+        <div id="notesList" style="display:flex;flex-direction:column;gap:8px;"></div>
+        <p id="noNotesMsg" style="font-size:13px;color:var(--text-faint);">No saved notes yet. Write something and hit Save!</p>
+      </div>
+    </div>
+  </main>
+</section>
+
+<!-- TIMER -->
+<section id="sec-timer" class="section">
+  <main>
+    <div class="section-header">
+      <h2 class="section-title">Pomodoro Timer</h2>
+    </div>
+    <div class="timer-layout">
+      <div class="card">
+        <div class="mode-tabs">
+          <button class="mode-tab active" id="modeF" onclick="setMode('focus',25)">Focus · 25m</button>
+          <button class="mode-tab" id="modeS" onclick="setMode('short',5)">Short break · 5m</button>
+          <button class="mode-tab" id="modeL" onclick="setMode('long',15)">Long break · 15m</button>
+        </div>
+        <div class="timer-face">
+          <svg class="timer-svg" viewBox="0 0 120 120">
+            <circle class="timer-bg-ring" cx="60" cy="60" r="52" />
+            <circle class="timer-ring" id="timerRing" cx="60" cy="60" r="52" stroke-dasharray="327" stroke-dashoffset="0" />
+          </svg>
+          <span class="timer-num" id="timerDisplay">25:00</span>
+        </div>
+        <div class="timer-btns">
+          <button class="timer-btn-main" id="timerBtn" onclick="toggleTimer()">▶ Start</button>
+          <button class="timer-btn-reset" onclick="resetTimer()">↺</button>
+        </div>
+        <p class="timer-tip">Work for 25 minutes, then take a 5-minute break.<br>After 4 sessions, take a long 15-minute break.</p>
+      </div>
+      <div class="flex-col" style="gap:1rem;">
+        <div class="card">
+          <p style="font-size:12px;font-weight:500;color:var(--text-muted);margin-bottom:12px;text-transform:uppercase;letter-spacing:0.08em;">Today's sessions</p>
+          <div class="sessions-grid" id="sessionsGrid">
+            <div class="session-pip"></div><div class="session-pip"></div>
+            <div class="session-pip"></div><div class="session-pip"></div>
+          </div>
+        </div>
+        <div class="card">
+          <p style="font-size:12px;font-weight:500;color:var(--text-muted);margin-bottom:12px;text-transform:uppercase;letter-spacing:0.08em;">Today's stats</p>
+          <div class="today-stats">
+            <div class="t-stat"><span class="t-stat-num" id="statSessions">0</span><span class="t-stat-lbl">Sessions</span></div>
+            <div class="t-stat"><span class="t-stat-num" id="statMins">0</span><span class="t-stat-lbl">Minutes</span></div>
+          </div>
+        </div>
+        <div class="card">
+          <p style="font-size:12px;color:var(--text-muted);line-height:1.6;">
+            <strong style="color:var(--text);">The Pomodoro Technique</strong><br>
+            Developed by Francesco Cirillo in the late 1980s.
+            Work in focused 25-minute bursts separated by short breaks.
+            Your brain retains information better with regular rest.
+          </p>
+        </div>
+      </div>
+    </div>
+  </main>
+</section>
+
+<script>
+// ========== NAV ==========
+function showSection(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('sec-' + id).classList.add('active');
+  document.getElementById('nav-' + id).classList.add('active');
+  updateHomeStats();
+}
+
+// ========== FLASHCARDS ==========
+let cards = [
+  { q: 'What is photosynthesis?', a: 'The process by which plants convert sunlight, water, and CO₂ into glucose and oxygen.' },
+  { q: "What is Newton's first law?", a: 'An object at rest stays at rest, and an object in motion stays in motion unless acted on by a net external force.' },
+  { q: 'What is the Pythagorean theorem?', a: 'In a right triangle: a² + b² = c², where c is the hypotenuse.' },
+];
+let cIdx = 0; let cFlipped = false;
+
+function renderCard() {
+  document.getElementById('fcFront').textContent = cards[cIdx].q;
+  document.getElementById('fcBack').textContent = cards[cIdx].a;
+  document.getElementById('fcCounter').textContent = (cIdx+1) + ' / ' + cards.length;
+  document.getElementById('flipInner').classList.remove('flipped');
+  cFlipped = false;
+  renderDeck();
+}
+function flipCard() { cFlipped = !cFlipped; document.getElementById('flipInner').classList.toggle('flipped', cFlipped); }
+function nextCard() { cIdx = (cIdx+1) % cards.length; renderCard(); }
+function prevCard() { cIdx = (cIdx-1+cards.length) % cards.length; renderCard(); }
+function shuffleCards() {
+  for (let i = cards.length-1; i>0; i--) { const j = Math.floor(Math.random()*(i+1)); [cards[i],cards[j]]=[cards[j],cards[i]]; }
+  cIdx = 0; renderCard();
+}
+function addCard() {
+  const q = document.getElementById('newQ').value.trim();
+  const a = document.getElementById('newA').value.trim();
+  if (!q || !a) return;
+  cards.push({ q, a });
+  document.getElementById('newQ').value = '';
+  document.getElementById('newA').value = '';
+  cIdx = cards.length - 1;
+  renderCard();
+  updateHomeStats();
+}
+function renderDeck() {
+  const list = document.getElementById('fcList');
+  list.innerHTML = '';
+  cards.forEach((c, i) => {
+    const el = document.createElement('div');
+    el.className = 'fc-item' + (i===cIdx?' active':'');
+    el.textContent = c.q.length > 45 ? c.q.slice(0,45)+'…' : c.q;
+    el.onclick = () => { cIdx = i; renderCard(); };
+    list.appendChild(el);
+  });
+}
+renderCard();
+
+// ========== QUIZ ==========
+const quizBank = [
+  { q: 'What gas do plants absorb during photosynthesis?', opts:['Oxygen','Carbon dioxide','Nitrogen','Hydrogen'], ans:1 },
+  { q: 'What organelle is known as the powerhouse of the cell?', opts:['Nucleus','Ribosome','Mitochondria','Golgi apparatus'], ans:2 },
+  { q: 'Which planet is closest to the Sun?', opts:['Venus','Earth','Mars','Mercury'], ans:3 },
+  { q: 'What is the chemical formula for water?', opts:['CO₂','H₂O','O₂','NaCl'], ans:1 },
+  { q: 'How many sides does a hexagon have?', opts:['5','7','8','6'], ans:3 },
+];
+let qIdx=0, qCorrect=0, qWrong=0, qAnswered=false;
+const letters = ['A','B','C','D'];
+
+function loadQ() {
+  qAnswered = false;
+  const pct = Math.round((qIdx/quizBank.length)*100);
+  document.getElementById('quizBar').style.width = pct + '%';
+  document.getElementById('qNum').textContent = 'Question ' + (qIdx+1) + ' of ' + quizBank.length;
+  const q = quizBank[qIdx];
+  document.getElementById('quizQ').textContent = q.q;
+  document.getElementById('quizFeedback').style.display = 'none';
+  document.getElementById('quizNextBtn').style.display = 'none';
+  const opts = document.getElementById('quizOpts');
+  opts.innerHTML = '';
+  q.opts.forEach((o, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'opt-btn';
+    btn.innerHTML = `<span class="opt-letter">${letters[i]}</span>${o}`;
+    btn.onclick = () => answerQ(i, q.ans, btn);
+    opts.appendChild(btn);
+  });
+}
+function answerQ(chosen, correct, el) {
+  if (qAnswered) return;
+  qAnswered = true;
+  document.querySelectorAll('.opt-btn').forEach(b => b.disabled = true);
+  const fb = document.getElementById('quizFeedback');
+  if (chosen === correct) {
+    el.classList.add('correct');
+    qCorrect++;
+    fb.className = 'quiz-feedback ok';
+    fb.textContent = '✓ Correct! Well done.';
+  } else {
+    el.classList.add('wrong');
+    document.querySelectorAll('.opt-btn')[correct].classList.add('correct');
+    qWrong++;
+    fb.className = 'quiz-feedback bad';
+    fb.textContent = '✗ Not quite. The correct answer was: ' + quizBank[qIdx].opts[correct];
+  }
+  fb.style.display = 'block';
+  document.getElementById('quizNextBtn').style.display = 'inline-flex';
+  document.getElementById('scoreC').textContent = qCorrect;
+  document.getElementById('scoreW').textContent = qWrong;
+  const total = qCorrect + qWrong;
+  const pct = total ? Math.round((qCorrect/total)*100) : 0;
+  document.getElementById('scorePct').textContent = pct + '%';
+  const circ = 327;
+  document.getElementById('scoreRing').style.strokeDashoffset = circ - (pct/100)*circ;
+  updateHomeStats();
+}
+function nextQ() {
+  qIdx++;
+  if (qIdx >= quizBank.length) {
+    const total = qCorrect + qWrong;
+    const pct = total ? Math.round((qCorrect/total)*100) : 0;
+    document.getElementById('quizContent').innerHTML =
+      `<div style="text-align:center;padding:3rem 1rem;">
+        <div style="font-size:3rem;margin-bottom:1rem;">🎉</div>
+        <h3 style="font-family:var(--font-display);font-size:1.8rem;margin-bottom:0.5rem;">Quiz complete!</h3>
+        <p style="color:var(--text-muted);margin-bottom:1.5rem;">You scored ${qCorrect} out of ${total} (${pct}%)</p>
+        <button class="btn-primary" onclick="restartQuiz()">↺ Try again</button>
+      </div>`;
+    return;
+  }
+  loadQ();
+}
+function restartQuiz() {
+  qIdx=0; qCorrect=0; qWrong=0;
+  document.getElementById('scoreC').textContent = '0';
+  document.getElementById('scoreW').textContent = '0';
+  document.getElementById('scorePct').textContent = '—';
+  document.getElementById('scoreRing').style.strokeDashoffset = '327';
+  document.getElementById('quizContent').innerHTML = `
+    <div class="quiz-progress-wrap"><div class="quiz-progress" id="quizBar" style="width:0%"></div></div>
+    <p class="quiz-q-num" id="qNum">Question 1 of 5</p>
+    <p class="quiz-question" id="quizQ"></p>
+    <div class="quiz-opts" id="quizOpts"></div>
+    <div class="quiz-feedback" id="quizFeedback"></div>
+    <button class="btn-primary" id="quizNextBtn" onclick="nextQ()" style="display:none;">Next question →</button>`;
+  loadQ();
+}
+loadQ();
+
+// ========== NOTES ==========
+let savedNotes = [];
+const notesTA = document.getElementById('notesTA');
+notesTA.addEventListener('input', updateMeta);
+function updateMeta() {
+  const txt = notesTA.value;
+  const words = txt.trim() ? txt.trim().split(/\s+/).length : 0;
+  document.getElementById('notesMeta').textContent = words + ' words · ' + txt.length + ' characters';
+}
+function wrapSel(a, b) {
+  const s = notesTA.selectionStart, e = notesTA.selectionEnd;
+  const v = notesTA.value;
+  notesTA.value = v.slice(0,s) + a + v.slice(s,e) + b + v.slice(e);
+  notesTA.focus(); notesTA.setSelectionRange(s+a.length, e+a.length); updateMeta();
+}
+function insertAt(txt) {
+  const s = notesTA.selectionStart;
+  const v = notesTA.value;
+  const lineStart = v.lastIndexOf('\n', s-1)+1;
+  notesTA.value = v.slice(0,lineStart) + txt + v.slice(lineStart);
+  notesTA.focus(); updateMeta();
+}
+function clearNotes() { if (confirm('Clear the editor?')) { notesTA.value = ''; updateMeta(); } }
+function newNote() { clearNotes(); }
+function saveNote() {
+  const txt = notesTA.value.trim();
+  if (!txt) return alert('Write something first!');
+  const title = txt.split('\n')[0].slice(0,40) || 'Untitled note';
+  savedNotes.unshift({ title, body: txt, date: new Date().toLocaleDateString('en-GB', {day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) });
+  renderNotes();
+}
+function renderNotes() {
+  const list = document.getElementById('notesList');
+  const msg = document.getElementById('noNotesMsg');
+  msg.style.display = savedNotes.length ? 'none' : 'block';
+  list.innerHTML = '';
+  savedNotes.forEach((n, i) => {
+    const el = document.createElement('div');
+    el.className = 'saved-note';
+    el.innerHTML = `<div class="note-title">${n.title}</div><div class="note-preview">${n.body.slice(0,60)}…</div><div class="note-date">${n.date}</div>`;
+    el.onclick = () => { notesTA.value = n.body; updateMeta(); };
+    list.appendChild(el);
+  });
+}
+renderNotes();
+
+// ========== TIMER ==========
+let timerMode = 'focus';
+let totalSecs = 25*60;
+let remaining = totalSecs;
+let running = false;
+let timerInterval = null;
+let sessions = 0;
+let totalMinutes = 0;
+const CIRC = 327;
+
+function fmt(s) {
+  return String(Math.floor(s/60)).padStart(2,'0') + ':' + String(s%60).padStart(2,'0');
+}
+function updateTimerUI() {
+  document.getElementById('timerDisplay').textContent = fmt(remaining);
+  const offset = CIRC * (1 - remaining/totalSecs);
+  document.getElementById('timerRing').style.strokeDashoffset = offset;
+}
+function setMode(m, mins) {
+  timerMode = m;
+  totalSecs = mins * 60;
+  remaining = totalSecs;
+  running = false;
+  clearInterval(timerInterval);
+  document.querySelectorAll('.mode-tab').forEach(b => b.classList.remove('active'));
+  document.getElementById('mode' + m[0].toUpperCase()).classList.add('active');
+  document.getElementById('timerBtn').textContent = '▶ Start';
+  updateTimerUI();
+}
+function toggleTimer() {
+  if (running) {
+    clearInterval(timerInterval);
+    running = false;
+    document.getElementById('timerBtn').textContent = '▶ Resume';
+  } else {
+    running = true;
+    document.getElementById('timerBtn').textContent = '⏸ Pause';
+    timerInterval = setInterval(() => {
+      remaining--;
+      updateTimerUI();
+      if (remaining <= 0) {
+        clearInterval(timerInterval);
+        running = false;
+        document.getElementById('timerBtn').textContent = '▶ Start';
+        remaining = totalSecs;
+        if (timerMode === 'focus') {
+          sessions = Math.min(sessions+1, 8);
+          totalMinutes += 25;
+          document.getElementById('statSessions').textContent = sessions;
+          document.getElementById('statMins').textContent = totalMinutes;
+          document.getElementById('heroSessions').textContent = sessions;
+          renderPips();
+        }
+        updateTimerUI();
+      }
+    }, 1000);
+  }
+}
+function resetTimer() {
+  clearInterval(timerInterval);
+  running = false;
+  remaining = totalSecs;
+  document.getElementById('timerBtn').textContent = '▶ Start';
+  updateTimerUI();
+}
+function renderPips() {
+  const grid = document.getElementById('sessionsGrid');
+  grid.innerHTML = '';
+  const count = Math.max(4, sessions);
+  for (let i=0; i<count; i++) {
+    const pip = document.createElement('div');
+    pip.className = 'session-pip' + (i < sessions ? ' done' : '');
+    grid.appendChild(pip);
+  }
+}
+updateTimerUI();
+renderPips();
+
+// ========== HOME STATS ==========
+function updateHomeStats() {
+  document.getElementById('heroCards').textContent = cards.length;
+  const total = qCorrect + qWrong;
+  document.getElementById('heroScore').textContent = total ? Math.round((qCorrect/total)*100) + '%' : '—';
+}
+</script>
+</body>
+</html>
